@@ -1,17 +1,12 @@
 name: Telegram Bot CI
 
 on:
-  workflow_dispatch: # Memungkinkan kamu menjalankan bot secara manual lewat tombol "Run workflow"
-  push:
-    branches: [ "main" ] # Jalankan otomatis jika ada push ke branch main
+  workflow_dispatch: # Hanya bisa dijalankan manual dari tab Actions
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    
-    # ⚠️ PENTING: Bot polling akan berjalan terus-menerus. 
-    # Kita batasi maksimal 30 menit agar tidak memakan kuota GitHub Actions kamu.
-    timeout-minutes: 30 
+    timeout-minutes: 30 # Bot akan mati otomatis setelah 30 menit agar hemat kuota
 
     steps:
       - name: Checkout repository
@@ -20,7 +15,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Gunakan versi Python yang stabil
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
@@ -28,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Bot
-        # Di sini kita menyuntikkan secret ke dalam environment variable
         env:
-          BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          # Menyuntikkan Secret GitHub ke dalam Environment Variable Python
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         run: python bot.py
