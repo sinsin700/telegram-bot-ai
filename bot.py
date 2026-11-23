@@ -5,11 +5,20 @@ from datetime import datetime, timezone, timedelta
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
 def ambil_chat_id_otomatis():
+    if not TOKEN:
+        print("ERROR: TELEGRAM_TOKEN kosong! Pastikan sudah disimpan di GitHub Secrets dengan nama TELEGRAM_TOKEN.")
+        return None
+
     url = f"https://telegram.org{TOKEN}/getUpdates"
-    response = requests.get(url).json()
+    res = requests.get(url)
     
-    if response.get("result"):
-        pesan_terakhir = response["result"][-1]
+    if res.status_code != 200:
+        print(f"ERROR dari Telegram (Status {res.status_code}): {res.text}")
+        return None
+
+    data = res.json()
+    if data.get("result"):
+        pesan_terakhir = data["result"][-1]
         if "message" in pesan_terakhir:
             return pesan_terakhir["message"]["chat"]["id"]
     return None
@@ -17,13 +26,13 @@ def ambil_chat_id_otomatis():
 def kirim_pesan(teks):
     chat_id = ambil_chat_id_otomatis()
     if not chat_id:
-        print("Gagal: Kirim pesan '/start' dulu ke bot Anda di Telegram.")
+        print("Gagal: Chat ID tidak ditemukan. Kirim pesan '/start' ke bot Anda di Telegram terlebih dahulu.")
         return
 
     url = f"https://telegram.org{TOKEN}/sendMessage"
     payload = {"chat_id": chat_id, "text": teks, "parse_mode": "HTML"}
-    response = requests.post(url, data=payload)
-    print("Status:", response.text)
+    res = requests.post(url, data=payload)
+    print("Hasil kirim pesan:", res.text)
 
 if __name__ == "__main__":
     wib = timezone(timedelta(hours=7))
