@@ -1,56 +1,25 @@
 import os
-import requests
-from datetime import datetime, timezone, timedelta
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Mengambil token secara aman dari GitHub Secrets
+# Ambil token dari environment variable
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
-def ambil_chat_id_otomatis():
-    if not TOKEN:
-        print("ERROR: TELEGRAM_TOKEN belum terbaca dari GitHub Secrets.")
-        return None
+if not TOKEN:
+    raise RuntimeError("❌ BOT_TOKEN tidak ditemukan di environment variable!")
 
-    url = f"https://telegram.org{TOKEN}/getUpdates"
-    res = requests.get(url)
-    
-    if res.status_code != 200:
-        print(f"ERROR Telegram ({res.status_code}): {res.text}")
-        return None
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"Halo {update.effective_user.first_name}! 👋")
 
-    data = res.json()
-    if data.get("result"):
-        pesan_terakhir = data["result"][-1]
-        if "message" in pesan_terakhir:
-            return pesan_terakhir["message"]["chat"]["id"]
-    return None
+async def balas_pesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"Kamu mengirim: {update.message.text}")
 
-def kirim_pesan(teks):
-    chat_id = ambil_chat_id_otomatis()
-    if not chat_id:
-        print("Gagal: Chat ID tidak ditemukan. Buka bot Anda di Telegram dan kirim pesan '/start' terlebih dahulu.")
-        return
-
-    url = f"https://telegram.org{TOKEN}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": teks,
-        "parse_mode": "HTML"
-    }
-    
-    res = requests.post(url, data=payload)
-    if res.status_code == 200:
-        print(f"SUKSES! Pesan terkirim ke Chat ID: {chat_id}")
-    else:
-        print(f"Gagal mengirim pesan: {res.text}")
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, balas_pesan))
+    print("Bot berjalan...")
+    app.run_polling()
 
 if __name__ == "__main__":
-    wib = timezone(timedelta(hours=7))
-    waktu_sekarang = datetime.now(wib).strftime("%d-%m-%Y %H:%M:%S WIB")
-
-    pesan = (
-        f"🤖 <b>Bot Telegram Aktif!</b>\n\n"
-        f"Status: <b>Berjalan Normal di GitHub Actions</b>\n"
-        f"Waktu Eksekusi: <code>{waktu_sekarang}</code>"
-    )
-
-    kirim_pesan(pesan)
+    main()
